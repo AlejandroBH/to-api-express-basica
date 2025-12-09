@@ -53,13 +53,29 @@ app.get("/", (req, res) => {
       "PUT /tareas/:id": "Actualizar tarea completa",
       "PATCH /tareas/:id": "Actualizar tarea parcial",
       "DELETE /tareas/:id": "Eliminar tarea",
+      "GET /estadisticas": "Conteo de tareas por estado",
     },
     ejemplos: {
       crear:
         'POST /tareas con body: {"titulo": "Mi tarea", "descripcion": "Descripción"}',
       filtrar: "GET /tareas?completada=false",
       buscar: "GET /tareas?q=express",
+      estadisticas: "GET /estadisticas",
     },
+  });
+});
+
+// GET /estadisticas - Conteo de tareas por estado
+app.get("/estadisticas", (req, res) => {
+  const total = tareas.length;
+  const completadas = tareas.filter((t) => t.completada).length;
+  const pendientes = total - completadas;
+
+  res.json({
+    total,
+    completadas,
+    pendientes,
+    porcentajeCompletadas: total > 0 ? (completadas / total) * 100 : 0,
   });
 });
 
