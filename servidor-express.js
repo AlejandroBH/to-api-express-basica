@@ -1,9 +1,11 @@
 // servidor-express-completo.js
 const express = require("express");
+const path = require("path");
 
 const validar = require("./helpers/validar.helper.js");
 const logOperacion = require("./helpers/logging.helper.js");
 const { tareaSchema, tareaPatchSchema } = require("./schemas/tarea.schemas.js");
+const guardar = require("./helpers/guardar.helper.js");
 
 // Crear aplicación Express
 const app = express();
@@ -130,6 +132,9 @@ app.get("/exportar-csv", (req, res) => {
     res.statusCode,
     `Exportación CSV exitosa de ${tareas.length} tareas`
   );
+
+  const DATOS = path.join(__dirname, "datos.csv");
+  guardar(DATOS, csvContent);
 
   res.send(csvContent);
 });
