@@ -40,6 +40,29 @@ function encontrarTarea(id) {
   return tareas.find((t) => t.id === parseInt(id));
 }
 
+// Convierte un arreglo de objetos JavaScript a una cadena en formato CSV.
+function toCSV(datos, columnas) {
+  if (!datos || datos.length === 0) {
+    return "";
+  }
+
+  const keys = columnas || Object.keys(datos[0]);
+  const encabezados = keys.map((key) => `"${key}"`).join(",");
+
+  const filas = datos.map((obj) => {
+    return keys
+      .map((key) => {
+        let valor =
+          obj[key] !== undefined && obj[key] !== null ? String(obj[key]) : "";
+        valor = valor.replace(/"/g, '""');
+        return `"${valor}"`;
+      })
+      .join(",");
+  });
+
+  return [encabezados, ...filas].join("\n");
+}
+
 // Rutas de la API
 
 // GET / - Información de la API
@@ -79,6 +102,36 @@ app.get("/estadisticas", (req, res) => {
     pendientes,
     porcentajeCompletadas: total > 0 ? (completadas / total) * 100 : 0,
   });
+});
+
+// GET /exportar/csv - Exportar todas las tareas en formato CSV
+app.get("/exportar-csv", (req, res) => {
+  const columnas = [
+    "id",
+    "titulo",
+    "descripcion",
+    "completada",
+    "fechaCreacion",
+    "fechaActualizacion",
+  ];
+
+  const csvContent = toCSV(tareas, columnas);
+
+  res.header("Content-Type", "text/csv");
+  res.header(
+    "Content-Disposition",
+    'attachment; filename="tareas_exportadas.csv"'
+  );
+
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    res.statusCode,
+    `Exportación CSV exitosa de ${tareas.length} tareas`
+  );
+
+  res.send(csvContent);
 });
 
 // GET /tareas - Listar todas las tareas
