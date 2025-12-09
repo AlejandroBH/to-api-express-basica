@@ -4,8 +4,6 @@ const path = require("path");
 const LOG_FILE = path.join(__dirname, "../logs", "api.log");
 
 function logging(metodo, ruta, estado, mensaje) {
-  console.log(metodo);
-
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${metodo} ${ruta} - ${estado} | ${mensaje}\n`;
 
