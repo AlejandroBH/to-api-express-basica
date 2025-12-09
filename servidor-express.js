@@ -1,6 +1,8 @@
 // servidor-express-completo.js
 const express = require("express");
+
 const validar = require("./helpers/validar.helper.js");
+const logOperacion = require("./helpers/logging.helper.js");
 const { tareaSchema, tareaPatchSchema } = require("./schemas/tarea.schemas.js");
 
 // Crear aplicación Express
@@ -108,6 +110,16 @@ app.get("/tareas", (req, res) => {
     resultados.reverse();
   }
 
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    res.statusCode,
+    `Listando ${resultados.length} tareas (Filtros: ${JSON.stringify(
+      req.query
+    )})`
+  );
+
   res.json({
     total: resultados.length,
     tareas: resultados,
@@ -120,8 +132,23 @@ app.get("/tareas/:id", (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
+    // LOG
+    logOperacion(
+      req.method,
+      req.originalUrl,
+      404,
+      `Fallo en Lectura - Tarea ID ${req.params.id} no encontrada`
+    );
     return res.status(404).json({ error: "Tarea no encontrada" });
   }
+
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    res.statusCode,
+    `Lectura exitosa de Tarea ID ${tarea.id} (${tarea.titulo})`
+  );
 
   res.json(tarea);
 });
@@ -138,6 +165,14 @@ app.post("/tareas", validar(tareaSchema), (req, res) => {
 
   tareas.push(nuevaTarea);
 
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    201,
+    `Creación exitosa: Tarea ID ${nuevaTarea.id} (${nuevaTarea.titulo})`
+  );
+
   res.status(201).json({
     mensaje: "Tarea creada exitosamente",
     tarea: nuevaTarea,
@@ -149,6 +184,14 @@ app.put("/tareas/:id", validar(tareaSchema), (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
+    // LOG
+    logOperacion(
+      req.method,
+      req.originalUrl,
+      404,
+      `Fallo en Actualización (PUT) - Tarea ID ${req.params.id} no encontrada`
+    );
+
     return res.status(404).json({ error: "Tarea no encontrada" });
   }
 
@@ -157,6 +200,14 @@ app.put("/tareas/:id", validar(tareaSchema), (req, res) => {
   tarea.completada =
     req.body.completada !== undefined ? req.body.completada : false;
   tarea.fechaActualizacion = new Date().toISOString();
+
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    200,
+    `Actualización (PUT) exitosa de Tarea ID ${tarea.id} (${tarea.titulo})`
+  );
 
   res.json({
     mensaje: "Tarea actualizada completamente",
@@ -169,6 +220,14 @@ app.patch("/tareas/:id", validar(tareaPatchSchema), (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
+    // LOG
+    logOperacion(
+      req.method,
+      req.originalUrl,
+      404,
+      `Fallo en Actualización (PATCH) - Tarea ID ${req.params.id} no encontrada`
+    );
+
     return res.status(404).json({ error: "Tarea no encontrada" });
   }
 
@@ -188,6 +247,14 @@ app.patch("/tareas/:id", validar(tareaPatchSchema), (req, res) => {
 
   tarea.fechaActualizacion = new Date().toISOString();
 
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    200,
+    `Actualización (PATCH) parcial de Tarea ID ${tarea.id} - Campos: [${camposActualizados}]`
+  );
+
   res.json({
     mensaje: "Tarea actualizada parcialmente",
     tarea,
@@ -199,10 +266,26 @@ app.delete("/tareas/:id", (req, res) => {
   const indice = tareas.findIndex((t) => t.id === parseInt(req.params.id));
 
   if (indice === -1) {
+    // LOG
+    logOperacion(
+      req.method,
+      req.originalUrl,
+      404,
+      `Fallo en Eliminación - Tarea ID ${req.params.id} no encontrada`
+    );
+
     return res.status(404).json({ error: "Tarea no encontrada" });
   }
 
   const tareaEliminada = tareas.splice(indice, 1)[0];
+
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    200,
+    `Eliminación exitosa: Tarea ID ${tareaEliminada.id} (${tareaEliminada.titulo})`
+  );
 
   res.json({
     mensaje: "Tarea eliminada exitosamente",
@@ -217,6 +300,14 @@ app.use((error, req, res, next) => {
   if (error.type === "entity.parse.failed") {
     return res.status(400).json({ error: "JSON inválido" });
   }
+
+  // LOG
+  logOperacion(
+    req.method,
+    req.originalUrl,
+    500,
+    `Error Interno: ${error.message}`
+  );
 
   res.status(500).json({
     error: "Error interno del servidor",
