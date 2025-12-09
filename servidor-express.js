@@ -133,7 +133,7 @@ app.get("/exportar-csv", (req, res) => {
     `Exportación CSV exitosa de ${tareas.length} tareas`
   );
 
-  const DATOS = path.join(__dirname, "datos.csv");
+  const DATOS = path.join(__dirname, "tareas_exportadas.csv");
   guardar(DATOS, csvContent);
 
   res.send(csvContent);
