@@ -1,5 +1,7 @@
 // servidor-express-completo.js
 const express = require("express");
+const validar = require("./helpers/validar.helper.js");
+const { tareaSchema, tareaPatchSchema } = require("./schemas/tarea.schemas.js");
 
 // Crear aplicación Express
 const app = express();
@@ -34,24 +36,6 @@ let siguienteId = 4;
 // Funciones helper
 function encontrarTarea(id) {
   return tareas.find((t) => t.id === parseInt(id));
-}
-
-function validarTarea(datos) {
-  const errores = [];
-
-  if (!datos.titulo || typeof datos.titulo !== "string") {
-    errores.push("El título es requerido y debe ser texto");
-  }
-
-  if (datos.titulo && datos.titulo.length < 3) {
-    errores.push("El título debe tener al menos 3 caracteres");
-  }
-
-  if (datos.descripcion && typeof datos.descripcion !== "string") {
-    errores.push("La descripción debe ser texto");
-  }
-
-  return errores;
 }
 
 // Rutas de la API
@@ -127,16 +111,7 @@ app.get("/tareas/:id", (req, res) => {
 });
 
 // POST /tareas - Crear nueva tarea
-app.post("/tareas", (req, res) => {
-  const errores = validarTarea(req.body);
-
-  if (errores.length > 0) {
-    return res.status(400).json({
-      error: "Datos inválidos",
-      detalles: errores,
-    });
-  }
-
+app.post("/tareas", validar(tareaSchema), (req, res) => {
   const nuevaTarea = {
     id: siguienteId++,
     titulo: req.body.titulo,
@@ -154,26 +129,17 @@ app.post("/tareas", (req, res) => {
 });
 
 // PUT /tareas/:id - Actualizar tarea completa
-app.put("/tareas/:id", (req, res) => {
+app.put("/tareas/:id", validar(tareaSchema), (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
     return res.status(404).json({ error: "Tarea no encontrada" });
   }
 
-  const errores = validarTarea(req.body);
-
-  if (errores.length > 0) {
-    return res.status(400).json({
-      error: "Datos inválidos",
-      detalles: errores,
-    });
-  }
-
-  // Actualización completa
   tarea.titulo = req.body.titulo;
   tarea.descripcion = req.body.descripcion || "";
-  tarea.completada = req.body.completada || false;
+  tarea.completada =
+    req.body.completada !== undefined ? req.body.completada : false;
   tarea.fechaActualizacion = new Date().toISOString();
 
   res.json({
@@ -183,38 +149,25 @@ app.put("/tareas/:id", (req, res) => {
 });
 
 // PATCH /tareas/:id - Actualizar tarea parcial
-app.patch("/tareas/:id", (req, res) => {
+app.patch("/tareas/:id", validar(tareaPatchSchema), (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
     return res.status(404).json({ error: "Tarea no encontrada" });
   }
 
-  // Validación parcial (solo campos proporcionados)
-  if (req.body.titulo !== undefined) {
-    if (typeof req.body.titulo !== "string" || req.body.titulo.length < 3) {
-      return res.status(400).json({ error: "Título inválido" });
-    }
-    tarea.titulo = req.body.titulo;
+  const body = req.body;
+
+  if (body.titulo !== undefined) {
+    tarea.titulo = body.titulo;
   }
 
-  if (req.body.descripcion !== undefined) {
-    if (
-      req.body.descripcion !== null &&
-      typeof req.body.descripcion !== "string"
-    ) {
-      return res.status(400).json({ error: "Descripción inválida" });
-    }
-    tarea.descripcion = req.body.descripcion || "";
+  if (body.descripcion !== undefined) {
+    tarea.descripcion = body.descripcion;
   }
 
-  if (req.body.completada !== undefined) {
-    if (typeof req.body.completada !== "boolean") {
-      return res
-        .status(400)
-        .json({ error: "Estado de completada debe ser boolean" });
-    }
-    tarea.completada = req.body.completada;
+  if (body.completada !== undefined) {
+    tarea.completada = body.completada;
   }
 
   tarea.fechaActualizacion = new Date().toISOString();
